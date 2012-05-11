@@ -281,6 +281,11 @@ public abstract class BatyrJob implements Tool {
     Map<String, String> settings = new HashMap<String, String>();
     args = SimpleCommandLineParser.parse(args, new String[]{"output"}, new String[0], settings);
     String path = settings.get("output");
+    if (path != null) {
+      FileOutputFormat.setOutputPath(job, new Path(path));
+    } else {
+      LOG.warn("No output directory specified");
+    }
 
     FileOutput output = getClass().getAnnotation(FileOutput.class);
     if (output != null) {
@@ -290,12 +295,8 @@ public abstract class BatyrJob implements Tool {
       } else {
         setOutputFormatClass(Format.getOutputFormat(output));
       }
-      if (path != null) {
-        FileOutputFormat.setOutputPath(job, new Path(path));
-      } else {
-        LOG.warn("No output directory specified");
-      }
     }
+    
     return args;
   }
 
