@@ -1,6 +1,5 @@
 package com.cloudera.batyr.mapreduce;
 
-import com.cloudera.batyr.mapreduce.Format;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

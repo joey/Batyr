@@ -296,7 +296,7 @@ public abstract class BatyrJob implements Tool {
         setOutputFormatClass(Format.getOutputFormat(output));
       }
     }
-    
+
     return args;
   }
 
@@ -361,7 +361,7 @@ public abstract class BatyrJob implements Tool {
   // </editor-fold>
 
   // <editor-fold defaultstate="collapsed" desc="Mapper and Reducer delegation methods">
-  protected void write(Object key, Object value) throws IOException, InterruptedException {
+  protected void write(Object key, Object value) {
     if (context instanceof Reducer.Context) {
       if (context.getOutputKeyClass() == KeyWritable.class) {
         key = new KeyWritable((Comparable) key);
@@ -377,7 +377,11 @@ public abstract class BatyrJob implements Tool {
         value = new ValueWritable(value);
       }
     }
-    context.write(key, value);
+    try {
+      context.write(key, value);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   static void setJobClass(JobContext job, Class<? extends BatyrJob> clazz) {
