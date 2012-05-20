@@ -62,4 +62,48 @@ public class TypeConverter {
     }
     return false;
   }
+
+  public static double toDouble(Object obj) {
+    if (obj instanceof Number) {
+      return (double) ((Number) obj).doubleValue();
+    } else if (obj instanceof CharSequence) {
+      return (double) Double.valueOf(obj.toString());
+    } else if (obj instanceof ByteWritable) {
+      return (double) ((ByteWritable) obj).get();
+    } else if (obj instanceof IntWritable) {
+      return (double) ((IntWritable) obj).get();
+    } else if (obj instanceof LongWritable) {
+      return (double) ((LongWritable) obj).get();
+    } else if (obj instanceof FloatWritable) {
+      return (double) ((FloatWritable) obj).get();
+    } else if (obj instanceof DoubleWritable) {
+      return (double) ((DoubleWritable) obj).get();
+    } else if (obj instanceof VIntWritable) {
+      return (double) ((VIntWritable) obj).get();
+    } else if (obj instanceof VLongWritable) {
+      return (double) ((VLongWritable) obj).get();
+    } else if (obj instanceof BooleanWritable) {
+      return (double) (((BooleanWritable) obj).get() ? 1.0 : 0.0);
+    } else if (obj instanceof Text) {
+      return (double) Double.valueOf(obj.toString());
+    }
+    throw new IllegalArgumentException("Can't convert " + obj.getClass() + " to a double");
+  }
+
+  public static boolean isConvertableToDouble(Object obj) {
+    if (obj instanceof Number
+        || obj instanceof CharSequence
+        || obj instanceof ByteWritable
+        || obj instanceof IntWritable
+        || obj instanceof LongWritable
+        || obj instanceof FloatWritable
+        || obj instanceof DoubleWritable
+        || obj instanceof VIntWritable
+        || obj instanceof VLongWritable
+        || obj instanceof BooleanWritable
+        || obj instanceof Text) {
+      return true;
+    }
+    return false;
+  }
 }

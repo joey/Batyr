@@ -1,6 +1,7 @@
 package com.cloudera.batyr.mapreduce;
 
 import com.cloudera.batyr.io.WritableValues;
+import com.cloudera.batyr.reflect.MethodGrabber;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -22,23 +23,18 @@ public class WritableReducer<KEYIN extends Writable, VALUEIN extends Writable, K
   protected void setup(Context context) throws IOException, InterruptedException {
     job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
-    for (Method method : job.getClass().getDeclaredMethods()) {
-      if (method.getName().equals("reduce") && method.getParameterTypes().length == 2) {
-        reduce = method;
-        Class<?> clazz = reduce.getParameterTypes()[1];
-        if (WritableValues.class.isAssignableFrom(clazz)) {
-          valuesType = clazz.asSubclass(WritableValues.class);
-          try {
-            valuesConstructor = valuesType.getConstructor(Iterable.class);
-          } catch (NoSuchMethodException ex) {
-            valuesConstructor = null;
-            LOG.warn("No constructor that takes an Iterable, assuming a generic Iterable will be passed", ex);
-          } catch (SecurityException ex) {
-            valuesConstructor = null;
-            LOG.warn("No public constructor that takes an Iterable, assuming a generic Iterable will be passed", ex);
-          }
-        }
-        break;
+    reduce = MethodGrabber.getReduce(job);
+    Class<?> clazz = reduce.getParameterTypes()[1];
+    if (WritableValues.class.isAssignableFrom(clazz)) {
+      valuesType = clazz.asSubclass(WritableValues.class);
+      try {
+        valuesConstructor = valuesType.getConstructor(Iterable.class);
+      } catch (NoSuchMethodException ex) {
+        valuesConstructor = null;
+        LOG.warn("No constructor that takes an Iterable, assuming a generic Iterable will be passed", ex);
+      } catch (SecurityException ex) {
+        valuesConstructor = null;
+        LOG.warn("No public constructor that takes an Iterable, assuming a generic Iterable will be passed", ex);
       }
     }
   }

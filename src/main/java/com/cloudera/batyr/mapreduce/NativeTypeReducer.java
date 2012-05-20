@@ -16,17 +16,14 @@ public class NativeTypeReducer<KEYOUT, VALUEOUT> extends Reducer<KeyWritable, Va
   private static Logger LOG = Logger.getLogger(NativeTypeReducer.class);
   BatyrJob job;
   Method reduce;
+  Method cleanup;
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
     job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
-    for (Method method : job.getClass().getDeclaredMethods()) {
-      if (method.getName().equals("reduce") && method.getParameterTypes().length == 2) {
-        reduce = method;
-        break;
-      }
-    }
+    reduce = MethodGrabber.getReduce(job);
+    cleanup = MethodGrabber.getReduceCleanup(job);
   }
 
   @Override
@@ -39,6 +36,21 @@ public class NativeTypeReducer<KEYOUT, VALUEOUT> extends Reducer<KeyWritable, Va
       throw new IOException(ex);
     } catch (InvocationTargetException ex) {
       throw new IOException(ex);
+    }
+  }
+
+  @Override
+  protected void cleanup(Context context) throws IOException, InterruptedException {
+    if (cleanup != null) {
+      try {
+        cleanup.invoke(job, context);
+      } catch (IllegalAccessException ex) {
+        throw new IOException(ex);
+      } catch (IllegalArgumentException ex) {
+        throw new IOException(ex);
+      } catch (InvocationTargetException ex) {
+        throw new IOException(ex);
+      }
     }
   }
 
