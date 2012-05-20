@@ -23,7 +23,7 @@ public class BatyrApplication implements Tool, Delegator {
 
   private static Logger LOG = Logger.getLogger(BatyrApplication.class);
   private static final String PHASE_KEY = BatyrApplication.class.getName() + ".phase";
-  private List<Do> phases = new ArrayList<Do>();
+  private List<BatyrJob> phases = new ArrayList<BatyrJob>();
   private List<Method> maps = new ArrayList<Method>();
   private List<Method> getPartitions = new ArrayList<Method>();
   private List<Method> reduces = new ArrayList<Method>();
@@ -37,6 +37,10 @@ public class BatyrApplication implements Tool, Delegator {
   public BatyrApplication(Configuration conf) {
     this.conf = conf;
     random = new Random();
+  }
+
+  public void phase(BatyrJob phase) {
+    phases.add(phase);
   }
 
   public void phase(Do phase) {
@@ -61,7 +65,7 @@ public class BatyrApplication implements Tool, Delegator {
     String outputPrefix = String.format("%s_%010d_", finalOutputPath.getName(), random.nextInt() & Integer.MAX_VALUE);
 
     for (int idx = 0; idx < phases.size(); idx++) {
-      Do phase = phases.get(idx);
+      BatyrJob phase = phases.get(idx);
       args = phase.configureJob(args);
       if (idx > 0) {
         phase.setInputFormatClass(SequenceFileInputFormat.class);
@@ -86,7 +90,7 @@ public class BatyrApplication implements Tool, Delegator {
   }
 
   public void map(Object key, Object value, int phaseIdx) {
-    Do phase = phases.get(phaseIdx);
+    BatyrJob phase = phases.get(phaseIdx);
     Method map = null;
     Class<?> keyClass;
     Class<?> valueClass;
