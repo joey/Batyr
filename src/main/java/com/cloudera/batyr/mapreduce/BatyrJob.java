@@ -160,11 +160,11 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
-  void configureJob() throws Exception {
-    configureJob(new String[0]);
+  String[] configureJob() throws Exception {
+    return configureJob(new String[0]);
   }
 
-  void configureJob(String[] args) throws Exception {
+  String[] configureJob(String[] args) throws Exception {
     args = configureAutomatically(args);
     args = configureManually(args);
 
@@ -176,6 +176,7 @@ public abstract class BatyrJob implements Tool, Delegator {
       setNumReduceTasks(client.getDefaultReduces() / 2);
       LOG.warn("Number of reducers was not set, automatically configuring to " + client.getDefaultReduces() / 2);
     }
+    return args;
   }
 
   private String[] configureAutomatically(String[] args) throws Exception {
