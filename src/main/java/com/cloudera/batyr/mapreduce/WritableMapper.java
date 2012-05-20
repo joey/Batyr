@@ -16,7 +16,7 @@ public class WritableMapper<KEYIN extends Writable, VALUEIN extends Writable, KE
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
-    job = BatyrJob.getJobObject(context);
+    job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
     for (Method method : job.getClass().getDeclaredMethods()) {
       if (method.getName().equals("map") && method.getParameterTypes().length == 2) {

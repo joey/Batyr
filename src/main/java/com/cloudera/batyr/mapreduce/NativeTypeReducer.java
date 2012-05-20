@@ -1,5 +1,6 @@
 package com.cloudera.batyr.mapreduce;
 
+import com.cloudera.batyr.reflect.MethodGrabber;
 import com.cloudera.batyr.types.KeyWritable;
 import com.cloudera.batyr.types.ValueWritable;
 import java.io.IOException;
@@ -18,7 +19,7 @@ public class NativeTypeReducer<KEYOUT, VALUEOUT> extends Reducer<KeyWritable, Va
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
-    job = BatyrJob.getJobObject(context);
+    job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
     for (Method method : job.getClass().getDeclaredMethods()) {
       if (method.getName().equals("reduce") && method.getParameterTypes().length == 2) {

@@ -1,5 +1,6 @@
 package com.cloudera.batyr.mapreduce;
 
+import com.cloudera.batyr.reflect.MethodGrabber;
 import com.cloudera.batyr.types.KeyWritable;
 import com.cloudera.batyr.types.TypeConverter;
 import com.cloudera.batyr.types.ValueWritable;
@@ -20,7 +21,7 @@ public class NativeTypeMapper<KEYIN, VALUEIN> extends Mapper<KEYIN, VALUEIN, Key
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
-    job = BatyrJob.getJobObject(context);
+    job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
     for (Method method : job.getClass().getDeclaredMethods()) {
       if (method.getName().equals("map") && method.getParameterTypes().length == 2) {

@@ -20,7 +20,7 @@ public class WritableReducer<KEYIN extends Writable, VALUEIN extends Writable, K
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
-    job = BatyrJob.getJobObject(context);
+    job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
     for (Method method : job.getClass().getDeclaredMethods()) {
       if (method.getName().equals("reduce") && method.getParameterTypes().length == 2) {

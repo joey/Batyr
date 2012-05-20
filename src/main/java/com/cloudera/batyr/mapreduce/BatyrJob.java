@@ -40,10 +40,10 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
 
-public abstract class BatyrJob implements Tool {
+public abstract class BatyrJob implements Tool, Delegator {
 
   private final static Logger LOG = Logger.getLogger(BatyrJob.class);
-  private final static String JOB_CLASS_KEY = BatyrJob.class.getName() + ".job.class";
+  private final static String DELEGATOR_CLASS_KEY = BatyrJob.class.getName() + ".delegator.class";
   public final static String OUTPUT_CLASS_KEY = BatyrJob.class.getName() + ".output.format";
   protected Configuration conf;
   protected String jobName;
@@ -180,7 +180,7 @@ public abstract class BatyrJob implements Tool {
 
   private String[] configureAutomatically(String[] args) throws Exception {
     setJarByClass(getClass());
-    setJobClass(job, getClass());
+    setDelegatorClass(job, getClass());
     args = setInput(args);
     args = setTasks(args);
     setNumReduceTasks(-1);
@@ -388,13 +388,22 @@ public abstract class BatyrJob implements Tool {
     }
   }
 
-  static void setJobClass(JobContext job, Class<? extends BatyrJob> clazz) {
-    job.getConfiguration().setClass(JOB_CLASS_KEY, clazz, BatyrJob.class);
+  static void setDelegatorClass(JobContext job, Class<? extends Delegator> clazz) {
+    job.getConfiguration().setClass(DELEGATOR_CLASS_KEY, clazz, Delegator.class);
   }
 
-  static BatyrJob getJobObject(JobContext job) {
-    Class<? extends BatyrJob> clazz = job.getConfiguration().getClass(JOB_CLASS_KEY, null, BatyrJob.class);
-    return ReflectionUtils.newInstance(clazz, job.getConfiguration());
+  static Delegator getDelegator(JobContext job) {
+    return getDelegator(job.getConfiguration());
+  }
+
+  static Delegator getDelegator(Configuration conf) {
+    Class<? extends Delegator> clazz = conf.getClass(DELEGATOR_CLASS_KEY, null, Delegator.class);
+    return ReflectionUtils.newInstance(clazz, conf);
+  }
+
+  @Override
+  public BatyrJob getJob() {
+    return this;
   }
 
   void setContext(TaskInputOutputContext context) {
