@@ -272,6 +272,10 @@ public abstract class BatyrJob implements Tool {
           }
         }
       }
+
+      if (method.getName().equals("getPartition") && method.getParameterTypes().length == 3) {
+        setPartitionerClass(BatyrPartitioner.class);
+      }
     }
     return args;
   }
