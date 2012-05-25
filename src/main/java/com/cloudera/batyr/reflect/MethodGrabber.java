@@ -2,7 +2,6 @@ package com.cloudera.batyr.reflect;
 
 import com.cloudera.batyr.mapreduce.BatyrJob;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.log4j.Logger;
 
@@ -19,17 +18,21 @@ public class MethodGrabber {
     }
     return null;
   }
-  
+
   public static Method getMap(BatyrJob job) {
     return getMethod(job, "map", 2);
   }
-  
+
   public static Method getGetPartition(BatyrJob job) {
     return getMethod(job, "getPartition", 3);
   }
-  
+
   public static Method getReduce(BatyrJob job) {
     return getMethod(job, "reduce", 2);
+  }
+
+  public static Method getCombine(BatyrJob job) {
+    return getMethod(job, "combine", 2);
   }
 
   public static Method getReduceCleanup(BatyrJob job) {
