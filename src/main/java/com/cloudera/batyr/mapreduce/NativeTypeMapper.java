@@ -16,6 +16,7 @@ public class NativeTypeMapper<KEYIN, VALUEIN> extends Mapper<KEYIN, VALUEIN, Key
   private static Logger LOG = Logger.getLogger(NativeTypeMapper.class);
   BatyrJob job;
   Method map;
+  Method combine;
   Class<?> keyClass;
   Class<?> valueClass;
 
@@ -26,6 +27,11 @@ public class NativeTypeMapper<KEYIN, VALUEIN> extends Mapper<KEYIN, VALUEIN, Key
     map = MethodGrabber.getMap(job);
     keyClass = map.getParameterTypes()[0];
     valueClass = map.getParameterTypes()[1];
+
+    combine = MethodGrabber.getCombine(job);
+    if (combine != null) {
+      job.setInMemoryCombiner(combine);
+    }
   }
 
   @Override
@@ -73,6 +79,13 @@ public class NativeTypeMapper<KEYIN, VALUEIN> extends Mapper<KEYIN, VALUEIN, Key
       throw new IOException(ex);
     } catch (InvocationTargetException ex) {
       throw new IOException(ex);
+    }
+  }
+
+  @Override
+  protected void cleanup(Context context) throws IOException, InterruptedException {
+    if (combine != null) {
+      job.runInMemoryCombiner();
     }
   }
 }

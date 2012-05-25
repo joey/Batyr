@@ -14,12 +14,18 @@ public class WritableMapper<KEYIN extends Writable, VALUEIN extends Writable, KE
   private static Logger LOG = Logger.getLogger(WritableMapper.class);
   BatyrJob job;
   Method map;
+  Method combine;
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
     job = BatyrJob.getDelegator(context).getJob();
     job.setContext(context);
     map = MethodGrabber.getMap(job);
+
+    combine = MethodGrabber.getCombine(job);
+    if (combine != null) {
+      job.setInMemoryCombiner(combine);
+    }
   }
 
   @Override
@@ -32,6 +38,13 @@ public class WritableMapper<KEYIN extends Writable, VALUEIN extends Writable, KE
       throw new IOException(ex);
     } catch (InvocationTargetException ex) {
       throw new IOException(ex);
+    }
+  }
+
+  @Override
+  protected void cleanup(Context context) throws IOException, InterruptedException {
+    if (combine != null) {
+      job.runInMemoryCombiner();
     }
   }
 }

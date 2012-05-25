@@ -11,7 +11,12 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import org.apache.hadoop.conf.Configuration;
@@ -382,8 +387,24 @@ public abstract class BatyrJob implements Tool, Delegator {
     setOutputValueClass((Class<?>) inputOutputTypes[3]);
   }
   // </editor-fold>
-
   // <editor-fold defaultstate="collapsed" desc="Mapper and Reducer delegation methods">
+  private Method combine = null;
+  private SortedMap<Object, List<Object>> collector = null;
+  private int numCollected;
+  private boolean combining = false;
+
+  void setInMemoryCombiner(Method combine) {
+    this.combine = combine;
+    collector = new TreeMap<Object, List<Object>>();
+    resetInMemoryCombiner();
+  }
+
+  private void resetInMemoryCombiner() {
+    collector.clear();
+    numCollected = 0;
+    combining = false;
+  }
+
   protected void write(Object key, Object value) {
     if (context instanceof Reducer.Context) {
       if (context.getOutputKeyClass() == KeyWritable.class) {
@@ -393,17 +414,52 @@ public abstract class BatyrJob implements Tool, Delegator {
         value = new ValueWritable(value);
       }
     } else if (context instanceof Mapper.Context) {
-      if (context.getMapOutputKeyClass() == KeyWritable.class) {
-        key = new KeyWritable((Comparable) key);
-      }
-      if (context.getMapOutputValueClass() == ValueWritable.class) {
-        value = new ValueWritable(value);
+      if (combine != null && combining == false) {
+        collect(key, value);
+        return;
+      } else {
+        if (context.getMapOutputKeyClass() == KeyWritable.class) {
+          key = new KeyWritable((Comparable) key);
+        }
+        if (context.getMapOutputValueClass() == ValueWritable.class) {
+          value = new ValueWritable(value);
+        }
       }
     }
     try {
       context.write(key, value);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
+    }
+  }
+
+  private void collect(Object key, Object value) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(String.format("Collecting %s,%s for later combining", key.toString(), value.toString()));
+    }
+    List<Object> values = collector.get(key);
+    if (values == null) {
+      values = new LinkedList<Object>();
+      collector.put(key, values);
+    }
+    values.add(value);
+    numCollected++;
+
+    if (numCollected > 104857) {
+      runInMemoryCombiner();
+      resetInMemoryCombiner();
+    }
+  }
+
+  void runInMemoryCombiner() {
+    LOG.debug("Running the combiner on " + collector.size() + " keys");
+
+    combining = true;
+    for (Entry<Object, List<Object>> entry : collector.entrySet()) {
+      try {
+        combine.invoke(this, entry.getKey(), entry.getValue());
+      } catch (Exception ex) {
+      }
     }
   }
 
