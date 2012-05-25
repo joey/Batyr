@@ -45,14 +45,28 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Logger;
 
+/**
+ * A BatyrJob encapsulates, automatically configures, and submits MapReduce jobs
+ * to a cluster. MapReduce jobs written with Batyr extend the BatyrJob class
+ * which has built-in functionality to automatically configure the Hadoop job
+ * based on only the contents of the job class itself.
+ */
 public abstract class BatyrJob implements Tool, Delegator {
 
   private final static Logger LOG = Logger.getLogger(BatyrJob.class);
   private final static String DELEGATOR_CLASS_KEY = BatyrJob.class.getName() + ".delegator.class";
+  /**
+   * The configuration of the job.
+   */
   protected Configuration conf;
+  /**
+   * The name of the job.
+   */
   protected String jobName;
+  /**
+   * The Hadoop job that this BatyrJob encapsulates.
+   */
   protected Job job;
-  private TaskInputOutputContext context;
   /**
    * Construct a new job with the given configuration and job name.
    *
@@ -89,11 +103,17 @@ public abstract class BatyrJob implements Tool, Delegator {
   }
 
   // <editor-fold defaultstate="collapsed" desc="Methods from Configurable">
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void setConf(Configuration conf) {
     this.conf = conf;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public Configuration getConf() {
     return conf;
@@ -517,6 +537,18 @@ public abstract class BatyrJob implements Tool, Delegator {
     combining = false;
   }
 
+  private TaskInputOutputContext context;
+  /**
+   * Set the task context for the currently executing task of this job. This
+   * method enables the generic write() method to output the results of both
+   * map tasks and reduce tasks.
+   *
+   * @param context The context for the current task.
+   */
+  void setContext(TaskInputOutputContext context) {
+    this.context = context;
+  }
+
   /**
    * Write the given key, value pair to the job's current context. If a combiner
    * is set, collection the key, value pair in memory for later combining.
@@ -629,17 +661,6 @@ public abstract class BatyrJob implements Tool, Delegator {
   @Override
   public BatyrJob getJob() {
     return this;
-  }
-
-  /**
-   * Set the task context for the currently executing task of this job. This
-   * method enables the generic write() method to output the results of both
-   * map tasks and reduce tasks.
-   *
-   * @param context The context for the current task.
-   */
-  void setContext(TaskInputOutputContext context) {
-    this.context = context;
   }
   // </editor-fold>
 
