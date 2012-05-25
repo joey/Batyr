@@ -9,14 +9,14 @@ import org.apache.hadoop.mapreduce.Reducer;
 public class CoOccurance extends BatyrApplication {{
   
   /*
-   * Convert item,user pairs to a user,item adjacency list
+   * Convert user,item pairs to a user,<item adjacency list>
    */
   phase(new Do() {
 
     public void map(long offset, String line) {
       String[] parts = line.split(",");
-      String item = parts[0];
-      String user = parts[1];
+      String user = parts[0];
+      String item = parts[1];
       write(user, item);
     }
 
@@ -46,6 +46,14 @@ public class CoOccurance extends BatyrApplication {{
         }
       }
     }
+    
+    public void combine(String key, Iterable<Long> counts) {
+      long sum = 0;
+      for (Long count : counts) {
+        sum += count;
+      }
+      write(key, sum);
+    }
 
     public int getPartition(String key, long value, int numPartitions) {
       return (key.substring(0, key.indexOf(':')).hashCode() & Integer.MAX_VALUE) % numPartitions;
@@ -53,7 +61,6 @@ public class CoOccurance extends BatyrApplication {{
     
     String curItem = null;
     long curCount = 0;
-
     public void reduce(String key, Iterable<Long> counts) {
       int colIdx = key.indexOf(':');
       String itemA = key.substring(0, colIdx);
@@ -94,7 +101,6 @@ public class CoOccurance extends BatyrApplication {{
     
     String curItem = null;
     long countA = 0;
-
     public void reduce(String key, Iterable<String> values) {
       int colIdx = key.indexOf(':');
       String itemA = key.substring(0, colIdx);
@@ -152,9 +158,9 @@ public class CoOccurance extends BatyrApplication {{
         }
       }
     }
+
     String curItem = null;
     SortedSet<Pair> topItems = new TreeSet<Pair>();
-    
     public void reduce(String key, Iterable<Double> values) {
       String itemA = key.substring(0, key.indexOf(':'));
       String itemB = key.substring(key.lastIndexOf(':')+1);
