@@ -18,4 +18,21 @@ public class KeyWritable<K extends Comparable<K>> extends ValueWritable<K> imple
   public int compareTo(KeyWritable<K> o) {
     return getValue().compareTo(o.getValue());
   }
+
+  @Override
+  public int hashCode() {
+    return getValue().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    final KeyWritable<K> other = (KeyWritable<K>) obj;
+    return getValue().equals(other);
+  }
 }
