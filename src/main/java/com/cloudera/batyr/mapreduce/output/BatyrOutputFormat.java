@@ -1,6 +1,7 @@
 package com.cloudera.batyr.mapreduce.output;
 
-import com.cloudera.batyr.mapreduce.BatyrJob;
+import com.cloudera.batyr.mapreduce.FileOutput;
+import com.cloudera.batyr.mapreduce.Format;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -16,10 +17,14 @@ import org.apache.log4j.Logger;
 public class BatyrOutputFormat<K, V> extends OutputFormat<K, V> implements Configurable {
 
   private static Logger LOG = Logger.getLogger(BatyrOutputFormat.class);
+  private final static String OUTPUT_CLASS_KEY = BatyrOutputFormat.class.getName() + ".output.format";
   private Configuration conf;
   private OutputFormat<K, V> output;
-
   public BatyrOutputFormat() {
+  }
+
+  public static void setOutputFormat(JobContext job, FileOutput output) {
+    job.getConfiguration().setClass(OUTPUT_CLASS_KEY, Format.getOutputFormat(output), OutputFormat.class);
   }
 
   @Override
@@ -46,11 +51,12 @@ public class BatyrOutputFormat<K, V> extends OutputFormat<K, V> implements Confi
   @Override
   public void setConf(Configuration conf) {
     this.conf = conf;
-    output = ReflectionUtils.newInstance(conf.getClass(BatyrJob.OUTPUT_CLASS_KEY, TextOutputFormat.class, OutputFormat.class), conf);
+    output = ReflectionUtils.newInstance(conf.getClass(OUTPUT_CLASS_KEY, TextOutputFormat.class, OutputFormat.class), conf);
   }
 
   @Override
   public Configuration getConf() {
     return conf;
   }
+
 }

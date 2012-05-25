@@ -49,12 +49,17 @@ public abstract class BatyrJob implements Tool, Delegator {
 
   private final static Logger LOG = Logger.getLogger(BatyrJob.class);
   private final static String DELEGATOR_CLASS_KEY = BatyrJob.class.getName() + ".delegator.class";
-  public final static String OUTPUT_CLASS_KEY = BatyrJob.class.getName() + ".output.format";
   protected Configuration conf;
   protected String jobName;
   protected Job job;
   private TaskInputOutputContext context;
-
+  /**
+   * Construct a new job with the given configuration and job name.
+   *
+   * @param conf    The initial configuration for the job.
+   * @param jobName The name of the job. If null, the job name will be set
+   * to the simple name of the job class.
+   */
   protected BatyrJob(Configuration conf, String jobName) {
     this.conf = conf;
     this.jobName = (jobName != null ? jobName : getClass().getSimpleName());
@@ -65,10 +70,20 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Construct a new job with the given configuration. The job name will be
+   * set to the simple name of the job class.
+   *
+   * @param conf The initial configuration for the job.
+   */
   protected BatyrJob(Configuration conf) {
     this(conf, null);
   }
 
+  /**
+   * Construct a new job with the default configuration. The job name will be
+   * set to the simple name of the job class.
+   */
   public BatyrJob() {
     this(new Configuration());
   }
@@ -86,6 +101,12 @@ public abstract class BatyrJob implements Tool, Delegator {
   // </editor-fold>
 
   // <editor-fold defaultstate="collapsed" desc="Job configuration and execution methods">
+  /**
+   * Create a new instance of this job and use {@link ToolRunner} to execute the
+   * job.
+   *
+   * @param args The commandline arguments to the job.
+   */
   public static void main(String[] args) {
     String jobClassName = getJobClassName();
     try {
@@ -103,6 +124,13 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Find the name of class we called main() on. This method relies on the
+   * sun.java.command system property and may fail on older JVMs or JVMs
+   * from other vendors.
+   *
+   * @return The name of the class we called main() on.
+   */
   private static String getJobClassName() {
     String command = System.getProperty("sun.java.command");
     if (command == null) {
@@ -144,6 +172,13 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Configure and run the job on the cluster.
+   *
+   * @param args  The commandline arguments for the job.
+   * @return      1 if the job failed, 0 otherwise.
+   * @throws Exception An error occured configuring or running the job.
+   */
   @Override
   public int run(String[] args) throws Exception {
     configureJob(args);
@@ -158,17 +193,32 @@ public abstract class BatyrJob implements Tool, Delegator {
    * Subclasses extending {@link BatyrJob} should override this method if they
    * want to modify the configuration of the job after automatic configuration,
    * but before job submission.
-   * 
-   * @throws Exception 
+   *
+   * @param args  The commandline arguments for the job.
+   * @return      The unused commandline arguments.
+   * @throws Exception AN error occured configuring the job.
    */
   protected String[] configureManually(String[] args) throws Exception {
     return args;
   }
 
+  /**
+   * Configure the job with no commandline arguments.
+   *
+   * @return  An empty array of strings.
+   * @throws Exception
+   */
   String[] configureJob() throws Exception {
     return configureJob(new String[0]);
   }
 
+  /**
+   * Configure the job.
+   *
+   * @param args  The commandline arguments.
+   * @return      The unused commandline arguments.
+   * @throws Exception
+   */
   String[] configureJob(String[] args) throws Exception {
     args = configureAutomatically(args);
     args = configureManually(args);
@@ -184,6 +234,19 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
+  /**
+   * Use reflection to automatically configure the job.
+   *
+   * Automatic configuration supports the following commandline arguments:
+   *
+   *  -input  The input directory or file for the job.
+   *  -output The output directory for the job. The output directory must not
+   *          exist.
+   *
+   * @param args The commandline arguments.
+   * @return The unused commandline arguments.
+   * @throws Exception An error occured while configuring the job.
+   */
   private String[] configureAutomatically(String[] args) throws Exception {
     setJarByClass(getClass());
     setDelegatorClass(job, getClass());
@@ -195,7 +258,14 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
-  @SuppressWarnings("static-access")
+  /**
+   * Set the input format based on the annotation on the job class and the
+   * input directory based on the commandline arguments.
+   *
+   * @param args  The commandline arguments.
+   * @return      The unused commandline arguments.
+   * @throws Exception An error occured trying to configure the input.
+   */
   private String[] setInput(String[] args) throws Exception {
     Map<String, String> settings = new HashMap<String, String>();
     args = SimpleCommandLineParser.parse(args, new String[]{"input"}, new String[0], settings);
@@ -211,6 +281,19 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
+  /**
+   * Automatically find the map an reduce tasks and configure the output key
+   * and value classes appropriately.
+   *
+   * The tasks can be set in one of two ways:
+   *
+   *  1. Have static inner class that extends Mapper/Reducer.
+   *  2. Have appropriately named methods (map, combine, reduce, and/or cleanup)
+   *
+   * @param args  The commandline arguments.
+   * @return      The unused commandline arguments.
+   * @throws Exception  An error occured while configuring the tasks.
+   */
   private String[] setTasks(String[] args) throws Exception {
     boolean foundMapper = false;
     boolean foundCombiner = false;
@@ -304,7 +387,14 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
-  @SuppressWarnings("static-access")
+  /**
+   * Set the output format based on the annotation on the job class and the
+   * output directory based on the commandline arguments.
+   *
+   * @param args  The commandline arguments.
+   * @return      The unused commandline arguments.
+   * @throws Exception An error occured trying to configure the output.
+   */
   private String[] setOutput(String[] args) throws Exception {
     Map<String, String> settings = new HashMap<String, String>();
     args = SimpleCommandLineParser.parse(args, new String[]{"output"}, new String[0], settings);
@@ -319,7 +409,7 @@ public abstract class BatyrJob implements Tool, Delegator {
     if (output != null) {
       if (WritableReducer.class.equals(getReducerClass())) {
         setOutputFormatClass(BatyrOutputFormat.class);
-        job.getConfiguration().setClass(OUTPUT_CLASS_KEY, Format.getOutputFormat(output), OutputFormat.class);
+        BatyrOutputFormat.setOutputFormat(job, output);
       } else {
         setOutputFormatClass(Format.getOutputFormat(output));
       }
@@ -328,6 +418,12 @@ public abstract class BatyrJob implements Tool, Delegator {
     return args;
   }
 
+  /**
+   * Use reflection to automatically set the map output types based on the given
+   * Mapper class.
+   *
+   * @param mapperClass The class for the map tasks.
+   */
   private void setMapOutputTypes(Class<? extends Mapper> mapperClass) {
     Class<? extends Mapper> superClass = mapperClass;
     Type[] actualTypes = null;
@@ -357,6 +453,12 @@ public abstract class BatyrJob implements Tool, Delegator {
     setMapOutputValueClass((Class<?>) actualTypes[3]);
   }
 
+  /**
+   * Use reflection to automatically set the reduce output types based on the
+   * given Reducer class.
+   *
+   * @param reducerClass The class for the reduce tasks.
+   */
   private void setReduceOutputTypes(Class<? extends Reducer> reducerClass) {
     Class<? extends Reducer> superClass = reducerClass;
     Type[] actualTypes = null;
@@ -387,24 +489,41 @@ public abstract class BatyrJob implements Tool, Delegator {
     setOutputValueClass((Class<?>) inputOutputTypes[3]);
   }
   // </editor-fold>
+
   // <editor-fold defaultstate="collapsed" desc="Mapper and Reducer delegation methods">
   private Method combine = null;
   private SortedMap<Object, List<Object>> collector = null;
   private int numCollected;
   private boolean combining = false;
-
+  /**
+   * Set the in memory combiner to the given method. The method must be a
+   * method on this job class.
+   *
+   * @param combine The method for combining.
+   */
   void setInMemoryCombiner(Method combine) {
     this.combine = combine;
     collector = new TreeMap<Object, List<Object>>();
     resetInMemoryCombiner();
   }
 
+  /**
+   * Reset the state of the in memory combiner. This method is called after
+   * every time the in memory combiner is run.
+   */
   private void resetInMemoryCombiner() {
     collector.clear();
     numCollected = 0;
     combining = false;
   }
 
+  /**
+   * Write the given key, value pair to the job's current context. If a combiner
+   * is set, collection the key, value pair in memory for later combining.
+   *
+   * @param key   The key to write
+   * @param value The value to write
+   */
   protected void write(Object key, Object value) {
     if (context instanceof Reducer.Context) {
       if (context.getOutputKeyClass() == KeyWritable.class) {
@@ -433,6 +552,12 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Collect a key, value pair for later combining.
+   *
+   * @param key   The key to collect.
+   * @param value The value to collect.
+   */
   private void collect(Object key, Object value) {
     if (LOG.isDebugEnabled()) {
       LOG.debug(String.format("Collecting %s,%s for later combining", key.toString(), value.toString()));
@@ -451,6 +576,9 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Execute the in memory combiner on the collected key, value pairs.
+   */
   void runInMemoryCombiner() {
     LOG.debug("Running the combiner on " + collector.size() + " keys");
 
@@ -463,230 +591,412 @@ public abstract class BatyrJob implements Tool, Delegator {
     }
   }
 
+  /**
+   * Set the {@link Delegator} class that will return BatyrJob to delegate to
+   * for calls to setup(), map(), reduce(), combine(), or cleanup().
+   *
+   * @param job   The context for the job.
+   * @param clazz The Delegator class.
+   */
   static void setDelegatorClass(JobContext job, Class<? extends Delegator> clazz) {
     job.getConfiguration().setClass(DELEGATOR_CLASS_KEY, clazz, Delegator.class);
   }
 
+  /**
+   * Get an instance of the Delegator object for the given job.
+   *
+   * @param job The job to get the Delegator for.
+   * @return The Delegator
+   */
   static Delegator getDelegator(JobContext job) {
     return getDelegator(job.getConfiguration());
   }
 
+  /**
+   * Get an instance of the Delegator object from the given configuration.
+   *
+   * @param conf  The configuration object that has the Delegator set.
+   * @return The Delegator
+   */
   static Delegator getDelegator(Configuration conf) {
     Class<? extends Delegator> clazz = conf.getClass(DELEGATOR_CLASS_KEY, null, Delegator.class);
     return ReflectionUtils.newInstance(clazz, conf);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public BatyrJob getJob() {
     return this;
   }
 
+  /**
+   * Set the task context for the currently executing task of this job. This
+   * method enables the generic write() method to output the results of both
+   * map tasks and reduce tasks.
+   *
+   * @param context The context for the current task.
+   */
   void setContext(TaskInputOutputContext context) {
     this.context = context;
   }
   // </editor-fold>
 
   // <editor-fold defaultstate="collapsed" desc="Methods from Job">
+  /**
+   * {@inheritDoc}
+   */
   public void failTask(TaskAttemptID taskId) throws IOException {
     job.failTask(taskId);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Counters getCounters() throws IOException {
     return job.getCounters();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public String getJar() {
     return job.getJar();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public TaskCompletionEvent[] getTaskCompletionEvents(int startFrom) throws IOException {
     return job.getTaskCompletionEvents(startFrom);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public String getTrackingURL() {
     return job.getTrackingURL();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean isComplete() throws IOException {
     return job.isComplete();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean isSuccessful() throws IOException {
     return job.isSuccessful();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void killJob() throws IOException {
     job.killJob();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void killTask(TaskAttemptID taskId) throws IOException {
     job.killTask(taskId);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public float mapProgress() throws IOException {
     return job.mapProgress();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public float reduceProgress() throws IOException {
     return job.reduceProgress();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setCancelDelegationTokenUponJobCompletion(boolean value) {
     job.setCancelDelegationTokenUponJobCompletion(value);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setCombinerClass(Class<? extends Reducer> cls) throws IllegalStateException {
     job.setCombinerClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setGroupingComparatorClass(Class<? extends RawComparator> cls) throws IllegalStateException {
     job.setGroupingComparatorClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setInputFormatClass(Class<? extends InputFormat> cls) throws IllegalStateException {
     job.setInputFormatClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setJarByClass(Class<?> cls) {
     job.setJarByClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setJobName(String name) throws IllegalStateException {
     job.setJobName(name);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setMapOutputKeyClass(Class<?> theClass) throws IllegalStateException {
     job.setMapOutputKeyClass(theClass);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setMapOutputValueClass(Class<?> theClass) throws IllegalStateException {
     job.setMapOutputValueClass(theClass);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setMapperClass(Class<? extends Mapper> cls) throws IllegalStateException {
     job.setMapperClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setNumReduceTasks(int tasks) throws IllegalStateException {
     job.setNumReduceTasks(tasks);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setOutputFormatClass(Class<? extends OutputFormat> cls) throws IllegalStateException {
     job.setOutputFormatClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setOutputKeyClass(Class<?> theClass) throws IllegalStateException {
     job.setOutputKeyClass(theClass);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setOutputValueClass(Class<?> theClass) throws IllegalStateException {
     job.setOutputValueClass(theClass);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setPartitionerClass(Class<? extends Partitioner> cls) throws IllegalStateException {
     job.setPartitionerClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setReducerClass(Class<? extends Reducer> cls) throws IllegalStateException {
     job.setReducerClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setSortComparatorClass(Class<? extends RawComparator> cls) throws IllegalStateException {
     job.setSortComparatorClass(cls);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setUserClassesTakesPrecedence(boolean value) {
     job.setUserClassesTakesPrecedence(value);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void setWorkingDirectory(Path dir) throws IOException {
     job.setWorkingDirectory(dir);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public float setupProgress() throws IOException {
     return job.setupProgress();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void submit() throws IOException, InterruptedException, ClassNotFoundException {
     job.submit();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean waitForCompletion(boolean verbose) throws IOException, InterruptedException, ClassNotFoundException {
     return job.waitForCompletion(verbose);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends Reducer<?, ?, ?, ?>> getCombinerClass() throws ClassNotFoundException {
     return job.getCombinerClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Configuration getConfiguration() {
     return job.getConfiguration();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Credentials getCredentials() {
     return job.getCredentials();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public RawComparator<?> getGroupingComparator() {
     return job.getGroupingComparator();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends InputFormat<?, ?>> getInputFormatClass() throws ClassNotFoundException {
     return job.getInputFormatClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public JobID getJobID() {
     return job.getJobID();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public String getJobName() {
     return job.getJobName();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<?> getMapOutputKeyClass() {
     return job.getMapOutputKeyClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<?> getMapOutputValueClass() {
     return job.getMapOutputValueClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends Mapper<?, ?, ?, ?>> getMapperClass() throws ClassNotFoundException {
     return job.getMapperClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public int getNumReduceTasks() {
     return job.getNumReduceTasks();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends OutputFormat<?, ?>> getOutputFormatClass() throws ClassNotFoundException {
     return job.getOutputFormatClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<?> getOutputKeyClass() {
     return job.getOutputKeyClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<?> getOutputValueClass() {
     return job.getOutputValueClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends Partitioner<?, ?>> getPartitionerClass() throws ClassNotFoundException {
     return job.getPartitionerClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Class<? extends Reducer<?, ?, ?, ?>> getReducerClass() throws ClassNotFoundException {
     return job.getReducerClass();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public RawComparator<?> getSortComparator() {
     return job.getSortComparator();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public Path getWorkingDirectory() throws IOException {
     return job.getWorkingDirectory();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean userClassesTakesPrecedence() {
     return job.userClassesTakesPrecedence();
   }
