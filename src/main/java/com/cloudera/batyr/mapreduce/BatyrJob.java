@@ -208,6 +208,7 @@ public abstract class BatyrJob implements Tool, Delegator {
 
   private String[] setTasks(String[] args) throws Exception {
     boolean foundMapper = false;
+    boolean foundCombiner = false;
     boolean foundReducer = false;
     for (Class<?> innerClass : getClass().getDeclaredClasses()) {
       if (Mapper.class.isAssignableFrom(innerClass)) {
@@ -251,6 +252,23 @@ public abstract class BatyrJob implements Tool, Delegator {
             setMapOutputKeyClass(KeyWritable.class);
             setMapOutputValueClass(ValueWritable.class);
             foundMapper = true;
+          }
+        }
+      }
+
+      if (method.getName().equals("combine") && method.getParameterTypes().length == 2) {
+        if (foundCombiner) {
+          LOG.warn(String.format("Already set combiner to %s, ignoring combine() method",
+              getMapperClass().getSimpleName()));
+        } else {
+          if (Writable.class.isAssignableFrom(method.getParameterTypes()[0])) {
+            setCombinerClass(WritableCombiner.class);
+            setMapOutputKeyClass(method.getParameterTypes()[0]);
+            Class<?> valuesClass = method.getParameterTypes()[1];
+            ParameterizedType valuesType = (ParameterizedType) valuesClass.getGenericSuperclass();
+            setMapOutputValueClass((Class<?>) valuesType.getActualTypeArguments()[0]);
+          } else {
+            setCombinerClass(NativeTypeCombiner.class);
           }
         }
       }
