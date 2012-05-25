@@ -46,6 +46,11 @@ public class BatyrApplication implements Tool, Delegator {
   public void phase(Do phase) {
     phases.add(phase);
   }
+  
+  @Deprecated
+  public void write(Object key, Object value) {
+    
+  }
 
   @Override
   public Configuration getConf() {
@@ -68,6 +73,7 @@ public class BatyrApplication implements Tool, Delegator {
       BatyrJob phase = phases.get(idx);
       args = phase.configureJob(args);
       if (idx > 0) {
+        phase.setJobName(getClass().getSimpleName() + " Phase " + idx);
         phase.setInputFormatClass(SequenceFileInputFormat.class);
         SequenceFileInputFormat.setInputPaths(phase.job, new Path(finalOutputPath.getParent(), String.format("%s%05d", outputPrefix, idx - 1)));
       }
