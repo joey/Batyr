@@ -2,13 +2,13 @@ package com.cloudera.batyr.reflect;
 
 import com.cloudera.batyr.mapreduce.BatyrJob;
 import java.lang.reflect.Method;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.log4j.Logger;
 
 public class MethodGrabber {
 
   private static Logger LOG = Logger.getLogger(MethodGrabber.class);
-
   public static Method getMethod(Object obj, String name, int numParameters) {
     for (Method method : obj.getClass().getDeclaredMethods()) {
       if (method.getName().equals(name) && method.getParameterTypes().length == numParameters) {
@@ -21,6 +21,20 @@ public class MethodGrabber {
 
   public static Method getMap(BatyrJob job) {
     return getMethod(job, "map", 2);
+  }
+
+  public static Method getMapCleanup(BatyrJob job) {
+    try {
+      Method cleanup = job.getClass().getDeclaredMethod("cleanup", Mapper.Context.class);
+      cleanup.setAccessible(true);
+      return cleanup;
+    } catch (NoSuchMethodException ex) {
+      LOG.info("No map cleanup method");
+      return null;
+    } catch (SecurityException ex) {
+      LOG.error("Can't get reduce cleanup method", ex);
+      return null;
+    }
   }
 
   public static Method getGetPartition(BatyrJob job) {
@@ -48,4 +62,5 @@ public class MethodGrabber {
       return null;
     }
   }
+
 }
