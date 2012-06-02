@@ -1,16 +1,8 @@
 package com.cloudera.batyr.parser;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.apache.log4j.Logger;
+import java.util.*;
 
 public class SimpleCommandLineParser {
-
-  private static Logger LOG = Logger.getLogger(SimpleCommandLineParser.class);
 
   public static String[] parse(String[] args, String[] options, String[] flags, Map<String, String> settings) {
     return parse(args, options, flags, settings, true);
@@ -51,4 +43,24 @@ public class SimpleCommandLineParser {
 
     return extraArgs.toArray(new String[extraArgs.size()]);
   }
+
+  Set<String> options;
+  Set<String> flags;
+  public SimpleCommandLineParser(String[] options, String[] flags) {
+    this(new HashSet<String>(Arrays.asList(options)), new HashSet<String>(Arrays.asList(flags)));
+  }
+
+  public SimpleCommandLineParser(Set<String> options, Set<String> flags) {
+    this.options = options;
+    this.flags = flags;
+  }
+
+  public String[] parse(String[] args, Map<String, String> settings) {
+    return parse(args, options, flags, settings);
+  }
+
+  public String[] parse(String[] args, Map<String, String> settings, boolean consume) {
+    return parse(args, options, flags, settings, consume);
+  }
+
 }
