@@ -9,14 +9,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import org.apache.hadoop.conf.Configuration;
@@ -26,17 +20,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
-import org.apache.hadoop.mapreduce.Counters;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.OutputFormat;
-import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.security.Credentials;
@@ -70,9 +54,9 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Construct a new job with the given configuration and job name.
    *
-   * @param conf    The initial configuration for the job.
-   * @param jobName The name of the job. If null, the job name will be set
-   * to the simple name of the job class.
+   * @param conf The initial configuration for the job.
+   * @param jobName The name of the job. If null, the job name will be set to
+   * the simple name of the job class.
    */
   protected BatyrJob(Configuration conf, String jobName) {
     this.conf = conf;
@@ -85,8 +69,8 @@ public abstract class BatyrJob implements Tool, Delegator {
   }
 
   /**
-   * Construct a new job with the given configuration. The job name will be
-   * set to the simple name of the job class.
+   * Construct a new job with the given configuration. The job name will be set
+   * to the simple name of the job class.
    *
    * @param conf The initial configuration for the job.
    */
@@ -146,8 +130,8 @@ public abstract class BatyrJob implements Tool, Delegator {
 
   /**
    * Find the name of class we called main() on. This method relies on the
-   * sun.java.command system property and may fail on older JVMs or JVMs
-   * from other vendors.
+   * sun.java.command system property and may fail on older JVMs or JVMs from
+   * other vendors.
    *
    * @return The name of the class we called main() on.
    */
@@ -195,8 +179,8 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Configure and run the job on the cluster.
    *
-   * @param args  The commandline arguments for the job.
-   * @return      1 if the job failed, 0 otherwise.
+   * @param args The commandline arguments for the job.
+   * @return 1 if the job failed, 0 otherwise.
    * @throws Exception An error occured configuring or running the job.
    */
   @Override
@@ -214,8 +198,8 @@ public abstract class BatyrJob implements Tool, Delegator {
    * want to modify the configuration of the job after automatic configuration,
    * but before job submission.
    *
-   * @param args  The commandline arguments for the job.
-   * @return      The unused commandline arguments.
+   * @param args The commandline arguments for the job.
+   * @return The unused commandline arguments.
    * @throws Exception AN error occured configuring the job.
    */
   protected String[] configureManually(String[] args) throws Exception {
@@ -225,7 +209,7 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Configure the job with no commandline arguments.
    *
-   * @return  An empty array of strings.
+   * @return An empty array of strings.
    * @throws Exception
    */
   String[] configureJob() throws Exception {
@@ -235,8 +219,8 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Configure the job.
    *
-   * @param args  The commandline arguments.
-   * @return      The unused commandline arguments.
+   * @param args The commandline arguments.
+   * @return The unused commandline arguments.
    * @throws Exception
    */
   String[] configureJob(String[] args) throws Exception {
@@ -259,9 +243,8 @@ public abstract class BatyrJob implements Tool, Delegator {
    *
    * Automatic configuration supports the following commandline arguments:
    *
-   *  -input  The input directory or file for the job.
-   *  -output The output directory for the job. The output directory must not
-   *          exist.
+   * -input The input directory or file for the job. -output The output
+   * directory for the job. The output directory must not exist.
    *
    * @param args The commandline arguments.
    * @return The unused commandline arguments.
@@ -279,11 +262,11 @@ public abstract class BatyrJob implements Tool, Delegator {
   }
 
   /**
-   * Set the input format based on the annotation on the job class and the
-   * input directory based on the commandline arguments.
+   * Set the input format based on the annotation on the job class and the input
+   * directory based on the commandline arguments.
    *
-   * @param args  The commandline arguments.
-   * @return      The unused commandline arguments.
+   * @param args The commandline arguments.
+   * @return The unused commandline arguments.
    * @throws Exception An error occured trying to configure the input.
    */
   private String[] setInput(String[] args) throws Exception {
@@ -302,17 +285,17 @@ public abstract class BatyrJob implements Tool, Delegator {
   }
 
   /**
-   * Automatically find the map an reduce tasks and configure the output key
-   * and value classes appropriately.
+   * Automatically find the map an reduce tasks and configure the output key and
+   * value classes appropriately.
    *
    * The tasks can be set in one of two ways:
    *
-   *  1. Have static inner class that extends Mapper/Reducer.
-   *  2. Have appropriately named methods (map, combine, reduce, and/or cleanup)
+   * 1. Have static inner class that extends Mapper/Reducer. 2. Have
+   * appropriately named methods (map, combine, reduce, and/or cleanup)
    *
-   * @param args  The commandline arguments.
-   * @return      The unused commandline arguments.
-   * @throws Exception  An error occured while configuring the tasks.
+   * @param args The commandline arguments.
+   * @return The unused commandline arguments.
+   * @throws Exception An error occured while configuring the tasks.
    */
   private String[] setTasks(String[] args) throws Exception {
     boolean foundMapper = false;
@@ -411,8 +394,8 @@ public abstract class BatyrJob implements Tool, Delegator {
    * Set the output format based on the annotation on the job class and the
    * output directory based on the commandline arguments.
    *
-   * @param args  The commandline arguments.
-   * @return      The unused commandline arguments.
+   * @param args The commandline arguments.
+   * @return The unused commandline arguments.
    * @throws Exception An error occured trying to configure the output.
    */
   private String[] setOutput(String[] args) throws Exception {
@@ -516,8 +499,8 @@ public abstract class BatyrJob implements Tool, Delegator {
   private int numCollected;
   private boolean combining = false;
   /**
-   * Set the in memory combiner to the given method. The method must be a
-   * method on this job class.
+   * Set the in memory combiner to the given method. The method must be a method
+   * on this job class.
    *
    * @param combine The method for combining.
    */
@@ -540,8 +523,8 @@ public abstract class BatyrJob implements Tool, Delegator {
   private TaskInputOutputContext context;
   /**
    * Set the task context for the currently executing task of this job. This
-   * method enables the generic write() method to output the results of both
-   * map tasks and reduce tasks.
+   * method enables the generic write() method to output the results of both map
+   * tasks and reduce tasks.
    *
    * @param context The context for the current task.
    */
@@ -550,10 +533,53 @@ public abstract class BatyrJob implements Tool, Delegator {
   }
 
   /**
+   * Increment the counter for the given group and counter name by the given
+   * amount.
+   *
+   * @param group The name of the group the counter is in
+   * @param name The name of the counter in the group
+   * @param incr The amount to increment by
+   */
+  protected void increment(String group, String name, long incr) {
+    getCounter(group, name).increment(incr);
+  }
+
+  /**
+   * Increment the counter for the given enumeration by the given amount.
+   *
+   * @param name The name of the counter as an enumeration
+   * @param incr The amount to increment by
+   */
+  protected void increment(Enum name, long incr) {
+    context.getCounter(name).increment(incr);
+  }
+
+  /**
+   * Get the counter for the given group and counter name.
+   *
+   * @param group The name of the group the counter is in
+   * @param name The name of the counter in the group
+   * @return The counter
+   */
+  protected Counter getCounter(String group, String name) {
+    return context.getCounter(group, name);
+  }
+
+  /**
+   * Get the counter for the given enumeration
+   *
+   * @param name The name of the counter as an enumeration
+   * @return The counter
+   */
+  protected Counter getCounter(Enum name) {
+    return context.getCounter(name);
+  }
+
+  /**
    * Write the given key, value pair to the job's current context. If a combiner
    * is set, collection the key, value pair in memory for later combining.
    *
-   * @param key   The key to write
+   * @param key The key to write
    * @param value The value to write
    */
   protected void write(Object key, Object value) {
@@ -587,7 +613,7 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Collect a key, value pair for later combining.
    *
-   * @param key   The key to collect.
+   * @param key The key to collect.
    * @param value The value to collect.
    */
   private void collect(Object key, Object value) {
@@ -627,7 +653,7 @@ public abstract class BatyrJob implements Tool, Delegator {
    * Set the {@link Delegator} class that will return BatyrJob to delegate to
    * for calls to setup(), map(), reduce(), combine(), or cleanup().
    *
-   * @param job   The context for the job.
+   * @param job The context for the job.
    * @param clazz The Delegator class.
    */
   static void setDelegatorClass(JobContext job, Class<? extends Delegator> clazz) {
@@ -647,7 +673,7 @@ public abstract class BatyrJob implements Tool, Delegator {
   /**
    * Get an instance of the Delegator object from the given configuration.
    *
-   * @param conf  The configuration object that has the Delegator set.
+   * @param conf The configuration object that has the Delegator set.
    * @return The Delegator
    */
   static Delegator getDelegator(Configuration conf) {
