@@ -116,69 +116,69 @@ public class ValueWritable<V> implements Writable {
   }
 
   @Override
-  public void write(DataOutput d) throws IOException {
-    WritableUtils.writeVInt(d, typeCode.getCode());
+  public void write(DataOutput out) throws IOException {
+    WritableUtils.writeVInt(out, typeCode.getCode());
     switch (typeCode) {
       case BOOLEAN:
-        d.writeBoolean(getBooleanValue());
+        out.writeBoolean(getBooleanValue());
         break;
       case BYTE:
-        d.writeByte(getByteValue());
+        out.writeByte(getByteValue());
         break;
       case CHARACTER:
-        d.writeChar(getCharacterValue());
+        out.writeChar(getCharacterValue());
         break;
       case SHORT:
-        d.writeShort(getShortValue());
+        out.writeShort(getShortValue());
         break;
       case INTEGER:
-        WritableUtils.writeVInt(d, getIntegerValue());
+        WritableUtils.writeVInt(out, getIntegerValue());
         break;
       case LONG:
-        WritableUtils.writeVLong(d, getLongValue());
+        WritableUtils.writeVLong(out, getLongValue());
         break;
       case FLOAT:
-        d.writeFloat(getFloatValue());
+        out.writeFloat(getFloatValue());
         break;
       case DOUBLE:
-        d.writeDouble(getDoubleValue());
+        out.writeDouble(getDoubleValue());
         break;
       case STRING:
         String string = getStringValue();
         ByteBuffer buf = Text.encode(string);
-        WritableUtils.writeVInt(d, buf.limit());
-        d.write(buf.array(), 0, buf.limit());
+        WritableUtils.writeVInt(out, buf.limit());
+        out.write(buf.array(), 0, buf.limit());
         break;
       case LIST:
         List list = getListValue();
-        WritableUtils.writeVInt(d, list.size());
+        WritableUtils.writeVInt(out, list.size());
         for (Object v : list) {
-          new ValueWritable(v).write(d);
+          new ValueWritable(v).write(out);
         }
         break;
       case SET:
         Set set = getSetValue();
-        WritableUtils.writeVInt(d, set.size());
+        WritableUtils.writeVInt(out, set.size());
         for (Object v : set) {
-          new ValueWritable(v).write(d);
+          new ValueWritable(v).write(out);
         }
         break;
       case MAP:
         Map<Object, Object> map = getMapValue();
-        WritableUtils.writeVInt(d, map.size());
+        WritableUtils.writeVInt(out, map.size());
         for (Entry<Object, Object> entry : map.entrySet()) {
-          new ValueWritable(entry.getKey()).write(d);
-          new ValueWritable(entry.getValue()).write(d);
+          new ValueWritable(entry.getKey()).write(out);
+          new ValueWritable(entry.getValue()).write(out);
         }
         break;
       case SERIALIZABLE:
         Serializable serializable = getSerializableValue();
-        final DataOutput finalD = d;
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(d instanceof OutputStream ? (OutputStream) d : new OutputStream() {
+        final DataOutput finalOut = out;
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(out instanceof OutputStream ? (OutputStream) out : new OutputStream() {
 
           @Override
           public void write(int b) throws IOException {
-            finalD.write(b);
+            finalOut.write(b);
           }
 
         });
@@ -193,79 +193,79 @@ public class ValueWritable<V> implements Writable {
   }
 
   @Override
-  public void readFields(DataInput di) throws IOException {
-    typeCode = TypeCode.fromCode(WritableUtils.readVInt(di));
+  public void readFields(DataInput in) throws IOException {
+    typeCode = TypeCode.fromCode(WritableUtils.readVInt(in));
     Object v = null;
     switch (typeCode) {
       case BOOLEAN:
-        v = Boolean.valueOf(di.readBoolean());
+        v = Boolean.valueOf(in.readBoolean());
         break;
       case BYTE:
-        v = Byte.valueOf(di.readByte());
+        v = Byte.valueOf(in.readByte());
         break;
       case CHARACTER:
-        v = Character.valueOf(di.readChar());
+        v = Character.valueOf(in.readChar());
         break;
       case SHORT:
-        v = Short.valueOf(di.readShort());
+        v = Short.valueOf(in.readShort());
         break;
       case INTEGER:
-        v = Integer.valueOf(WritableUtils.readVInt(di));
+        v = Integer.valueOf(WritableUtils.readVInt(in));
         break;
       case LONG:
-        v = Long.valueOf(WritableUtils.readVLong(di));
+        v = Long.valueOf(WritableUtils.readVLong(in));
         break;
       case FLOAT:
-        v = Float.valueOf(di.readFloat());
+        v = Float.valueOf(in.readFloat());
         break;
       case DOUBLE:
-        v = Double.valueOf(di.readDouble());
+        v = Double.valueOf(in.readDouble());
         break;
       case STRING:
-        int length = WritableUtils.readVInt(di);
+        int length = WritableUtils.readVInt(in);
         byte[] bytes = new byte[length];
-        di.readFully(bytes, 0, length);
+        in.readFully(bytes, 0, length);
         v = Text.decode(bytes, 0, length);
         break;
       case LIST:
-        length = WritableUtils.readVInt(di);
+        length = WritableUtils.readVInt(in);
         List list = new ArrayList(length);
         ValueWritable valueWritable = new ValueWritable();
         while (length-- > 0) {
-          valueWritable.readFields(di);
+          valueWritable.readFields(in);
           list.add(valueWritable.getValue());
         }
         v = list;
         break;
       case SET:
-        length = WritableUtils.readVInt(di);
+        length = WritableUtils.readVInt(in);
         Set set = new HashSet(length);
         valueWritable = new ValueWritable();
         while (length-- > 0) {
-          valueWritable.readFields(di);
+          valueWritable.readFields(in);
           set.add(valueWritable.getValue());
         }
         v = set;
         break;
       case MAP:
-        length = WritableUtils.readVInt(di);
+        length = WritableUtils.readVInt(in);
         Map map = new HashMap(length);
         ValueWritable mapKey = new ValueWritable();
         ValueWritable mapValue = new ValueWritable();
         while (length-- > 0) {
-          mapKey.readFields(di);
-          mapValue.readFields(di);
+          mapKey.readFields(in);
+          mapValue.readFields(in);
           map.put(mapKey.getValue(), mapValue.getValue());
         }
         v = map;
         break;
       case SERIALIZABLE:
-        final DataInput finalDi = di;
-        ObjectInputStream objectInputStream = new ObjectInputStream(di instanceof InputStream ? (InputStream) di : new InputStream() {
+        final DataInput finalIn = in;
+        ObjectInputStream objectInputStream = new ObjectInputStream(in instanceof InputStream ? (InputStream) in : new InputStream() {
 
           @Override
           public int read() throws IOException {
-            return finalDi.readByte();
+            return finalIn.readByte();
           }
 
         });
