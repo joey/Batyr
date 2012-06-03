@@ -1,20 +1,11 @@
 package com.cloudera.batyr.types;
 
-import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.ByteWritable;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.VIntWritable;
-import org.apache.hadoop.io.VLongWritable;
+import org.apache.hadoop.io.*;
 import org.apache.log4j.Logger;
 
 public class TypeConverter {
 
   private static Logger LOG = Logger.getLogger(TypeConverter.class);
-
   public static String toString(Object obj) {
     return obj.toString();
   }
@@ -106,4 +97,5 @@ public class TypeConverter {
     }
     return false;
   }
+
 }

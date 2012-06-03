@@ -6,7 +6,6 @@ import org.apache.log4j.Logger;
 public class KeyWritable<K extends Comparable<K>> extends ValueWritable<K> implements WritableComparable<KeyWritable<K>> {
 
   private static Logger LOG = Logger.getLogger(KeyWritable.class);
-
   public KeyWritable() {
   }
 
@@ -33,6 +32,7 @@ public class KeyWritable<K extends Comparable<K>> extends ValueWritable<K> imple
       return false;
     }
     final KeyWritable<K> other = (KeyWritable<K>) obj;
-    return getValue().equals(other);
+    return getValue().equals(other.getValue());
   }
+
 }
