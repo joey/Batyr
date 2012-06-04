@@ -3,12 +3,7 @@ package com.cloudera.batyr.mapreduce.input;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.mapreduce.*;
 
 public class NullInputFormat<K, V> extends InputFormat<K, V> {
 
@@ -19,14 +14,13 @@ public class NullInputFormat<K, V> extends InputFormat<K, V> {
 
   @Override
   public RecordReader<K, V> createRecordReader(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    return new NullRecordReader<K, V>();
   }
 
   public static class NullRecordReader<K, V> extends RecordReader<K, V> {
-    
+
     private K key;
     private V value;
-
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
       key = null;
@@ -56,5 +50,6 @@ public class NullInputFormat<K, V> extends InputFormat<K, V> {
     @Override
     public void close() throws IOException {
     }
+
   }
 }
