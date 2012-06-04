@@ -128,7 +128,85 @@ where you want to be. However, this style is not designed for maximum performanc
 
 ### Using Writables
 
-TODO
+If you are at all performance conscience, then you may want to use Writables instead of
+native Java types. Writables are generally more efficient to serialize/deserialize and
+are mutable which lowers the number of object creations generally required. Fortunately,
+Batyr makes writing MapReduce jobs that use Writables just as easy as it does with Java
+native types. Let's see the Writables version of our word count example:
+
+	package com.cloudera.batyr.example;
+	
+	import com.cloudera.batyr.io.LongWritableValues;
+	import com.cloudera.batyr.mapreduce.BatyrJob;
+	import com.cloudera.batyr.mapreduce.FileInput;
+	import com.cloudera.batyr.mapreduce.FileOutput;
+	import java.io.IOException;
+	import java.util.regex.Pattern;
+	import org.apache.hadoop.io.LongWritable;
+	import org.apache.hadoop.io.Text;
+	import static com.cloudera.batyr.mapreduce.Format.*;
+	
+	@FileInput(TextFile)
+	@FileOutput(SequenceFile)
+	public class SimpleWordCount extends BatyrJob {
+	
+	  Pattern delimeter = Pattern.compile("[\\s\\p{Punct}]+");
+	
+	  public void map(LongWritable key, Text value) throws IOException, InterruptedException {
+	    for (String word : delimeter.split(value.toString())) {
+	      write(new Text(word), new LongWritable(1l));
+	    }
+	  }
+	
+	  public void reduce(Text key, LongWritableValues values) throws IOException, InterruptedException {
+	    long sum = 0l;
+	    for (LongWritable value : values) {
+	      sum += value.get();
+	    }
+	    write(key, new LongWritable(sum));
+	  }
+	}
+
+Once again, the job is declared as a single class with appropriately named map() and
+reduce methods. The only thing that may look unusual is the use of the
+LongWritableValues class in place of the typical Iterable<LongWritable>. This is
+required to get around a limitation of Java's reflection support. Namely, Java
+does not keep the paramaterized types of variables at runtime. What this means is that
+the type Iterable<LongWritable> and Iterable<Text> are completely indistinguishable at
+runtime. In order to correctly set the map phase output value type (required by Hadoop),
+Batyr needs this information. You should see a number of these Iterable classes
+pre-built for the common Writable types. If you need to use a custom Writable class
+for the output values of your map phase, you'll need to implement your own Values
+class. To make this easier, Batyr comes with a base class called WritableValues that
+simplifies the create of these helper classes. For example, suppose you have a class
+called MyWritable. You could implement the MyWritableValues class like so:
+
+	package com.cloudera.batyr.example;
+	
+	import com.cloudera.batyr.io.WritableValues;
+	
+	public class MyWritableValues extends WritableValues<MyWritable> {
+	
+	  public MyWritableValues(Iterable<MyWritable> iterable) {
+	    super(iterable);
+	  }
+	
+	}
+
+The only requirement is that you build a single-argument constructor that takes an
+Iterable<V extends Writable>. Alternatively, you can use a plain Iterable in your
+reduce method and simply set the map output value class in your configureManually()
+method:
+
+	public class MyJob extends BatyrJob {
+	  ...
+	  @Override
+	  protected String[] configureManually(String[] args) throws Exception {
+	    setMapOutputValueClass(MyWritable.class);
+	    return args;
+	  }
+	  ...
+	}
 
 ### Defining Custom Mapper and Reducer Classes
 
@@ -395,14 +473,14 @@ TODO
 
 ### Additional Input and Output Formats
 
-Batyr supports some of the common file formats for input and output,
+Batyr supports some of the common Hadoop file formats for input and output,
 including text files, sequence files, and map files. Batyr will be adding support
-for Avro data files in the near future and hopes to add other input and output
+for Avro data files in the near future and we hope to add other input and output
 sources such as HBase and HCatalog tables down the road.
 
 ### Additional Languages
 
-Batyr is written in Java, the native language for Hadoop, and unlike many Java APIs
+Batyr is written in Java, the native language for Hadoop and, unlike many Java APIs,
 is devoid of boiler plate code and complex design patterns. This makes Batyr a natural
-fit for other JVM-compatabile languages such as Jython and JRuby. We hope to extends
+fit for other JVM-compatabile languages such as Jython and JRuby. We hope to extend
 the Batyr API so you can use your favorite language.
