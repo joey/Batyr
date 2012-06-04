@@ -169,10 +169,10 @@ native types. Let's see the Writables version of our word count example:
 
 Once again, the job is declared as a single class with appropriately named map() and
 reduce methods. The only thing that may look unusual is the use of the
-LongWritableValues class in place of the typical Iterable<LongWritable>. This is
+LongWritableValues class in place of the typical Iterable&lt;LongWritable&gt;. This is
 required to get around a limitation of Java's reflection support. Namely, Java
 does not keep the paramaterized types of variables at runtime. What this means is that
-the type Iterable<LongWritable> and Iterable<Text> are completely indistinguishable at
+the type Iterable&lt;LongWritable&gt; and Iterable&lt;Text&gt; are completely indistinguishable at
 runtime. In order to correctly set the map phase output value type (required by Hadoop),
 Batyr needs this information. You should see a number of these Iterable classes
 pre-built for the common Writable types. If you need to use a custom Writable class
@@ -194,7 +194,7 @@ called MyWritable. You could implement the MyWritableValues class like so:
 	}
 
 The only requirement is that you build a single-argument constructor that takes an
-Iterable<V extends Writable>. Alternatively, you can use a plain Iterable in your
+Iterable&lt;V extends Writable&gt;. Alternatively, you can use a plain Iterable in your
 reduce method and simply set the map output value class in your configureManually()
 method:
 
