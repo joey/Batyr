@@ -5,18 +5,12 @@ import com.cloudera.batyr.mapreduce.Format;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.OutputCommitter;
-import org.apache.hadoop.mapreduce.OutputFormat;
-import org.apache.hadoop.mapreduce.RecordWriter;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.log4j.Logger;
 
 public class BatyrOutputFormat<K, V> extends OutputFormat<K, V> implements Configurable {
 
-  private static Logger LOG = Logger.getLogger(BatyrOutputFormat.class);
   private final static String OUTPUT_CLASS_KEY = BatyrOutputFormat.class.getName() + ".output.format";
   private Configuration conf;
   private OutputFormat<K, V> output;
